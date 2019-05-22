@@ -6,7 +6,7 @@
  * @description
  * The controller for deleting content
  */
-function DataTypeDeleteController($scope, dataTypeResource, treeService, navigationService) {
+function DataTypeDeleteController($scope, dataTypeResource, treeService, navigationService, localizationService) {
 
     $scope.performDelete = function() {
 
@@ -18,11 +18,10 @@ function DataTypeDeleteController($scope, dataTypeResource, treeService, navigat
             //get the root node before we remove it
             var rootNode = treeService.getTreeRoot($scope.currentNode);
             
-            //TODO: Need to sync tree, etc...
+            // TODO: Need to sync tree, etc...
             treeService.removeNode($scope.currentNode);
             navigationService.hideMenu();
         });
-
     };
 
     $scope.performContainerDelete = function () {
@@ -35,7 +34,7 @@ function DataTypeDeleteController($scope, dataTypeResource, treeService, navigat
             //get the root node before we remove it
             var rootNode = treeService.getTreeRoot($scope.currentNode);
 
-            //TODO: Need to sync tree, etc...
+            // TODO: Need to sync tree, etc...
             treeService.removeNode($scope.currentNode);
             navigationService.hideMenu();
         });
@@ -45,6 +44,13 @@ function DataTypeDeleteController($scope, dataTypeResource, treeService, navigat
     $scope.cancel = function() {
         navigationService.hideDialog();
     };
+
+    $scope.labels = {};
+    localizationService
+        .format(["editdatatype_yesDelete", "editdatatype_andAllRelated"], "%0% " + $scope.currentNode.name + " %1%")
+        .then(function (data) {
+            $scope.labels.deleteConfirm = data;
+        });
 }
 
 angular.module("umbraco").controller("Umbraco.Editors.DataType.DeleteController", DataTypeDeleteController);

@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Web;
-using Umbraco.Core.Configuration;
+using Umbraco.Core;
 using Umbraco.Core.Services;
 
 namespace Umbraco.Web.HealthCheck.Checks.Security
@@ -16,10 +15,14 @@ namespace Umbraco.Web.HealthCheck.Checks.Security
     public class ExcessiveHeadersCheck : HealthCheck
     {
         private readonly ILocalizedTextService _textService;
+        private readonly IRuntimeState _runtime;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ExcessiveHeadersCheck(HealthCheckContext healthCheckContext) : base(healthCheckContext)
+        public ExcessiveHeadersCheck(ILocalizedTextService textService, IRuntimeState runtime, IHttpContextAccessor httpContextAccessor)
         {
-            _textService = healthCheckContext.ApplicationContext.Services.TextService;
+            _textService = textService;
+            _runtime = runtime;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         /// <summary>
@@ -46,12 +49,10 @@ namespace Umbraco.Web.HealthCheck.Checks.Security
         {
             var message = string.Empty;
             var success = false;
-            var url = HealthCheckContext.HttpContext.Request.Url;
+            var url = _runtime.ApplicationUrl;
 
             // Access the site home page and check for the headers
-            var useSsl = GlobalSettings.UseSSL || HealthCheckContext.HttpContext.Request.ServerVariables["SERVER_PORT"] == "443";
-            var address = string.Format("http{0}://{1}:{2}", useSsl ? "s" : "", url.Host.ToLower(), url.Port);
-            var request = WebRequest.Create(address);
+            var request = WebRequest.Create(url);
             request.Method = "HEAD";
             try
             {
@@ -68,7 +69,7 @@ namespace Umbraco.Web.HealthCheck.Checks.Security
             }
             catch (Exception ex)
             {
-                message = _textService.Localize("healthcheck/httpsCheckInvalidUrl", new[] { address, ex.Message });
+                message = _textService.Localize("healthcheck/httpsCheckInvalidUrl", new[] { url.ToString(), ex.Message });
             }
 
             var actions = new List<HealthCheckAction>();

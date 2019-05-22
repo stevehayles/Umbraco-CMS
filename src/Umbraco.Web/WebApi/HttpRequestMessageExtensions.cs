@@ -1,22 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading.Tasks;
 using System.Web;
-using System.Web.Http;
 using System.Web.Http.ModelBinding;
-using System.Web.Http.Results;
 using Microsoft.Owin;
 using Umbraco.Core;
 using Umbraco.Web.Models.ContentEditing;
 
 namespace Umbraco.Web.WebApi
 {
-    
+
     public static class HttpRequestMessageExtensions
     {
 
@@ -27,10 +22,22 @@ namespace Umbraco.Web.WebApi
         /// <returns></returns>
         internal static Attempt<IOwinContext> TryGetOwinContext(this HttpRequestMessage request)
         {
+            // occurs in unit tests?
+            if (request.Properties.TryGetValue("MS_OwinContext", out var o) && o is IOwinContext owinContext)
+                return Attempt.Succeed(owinContext);
+
             var httpContext = request.TryGetHttpContext();
-            return httpContext 
-                ? Attempt.Succeed(httpContext.Result.GetOwinContext()) 
-                : Attempt<IOwinContext>.Fail();
+            try
+            {
+                return httpContext
+                        ? Attempt.Succeed(httpContext.Result.GetOwinContext())
+                        : Attempt<IOwinContext>.Fail();
+            }
+            catch (InvalidOperationException)
+            {
+                //this will occur if there is no OWIN environment which generally would only be in things like unit tests
+                return Attempt<IOwinContext>.Fail();
+            }
         }
 
         /// <summary>
@@ -57,7 +64,7 @@ namespace Umbraco.Web.WebApi
         }
 
         /// <summary>
-        /// Create a 403 (Forbidden) response indicating that hte current user doesn't have access to the resource
+        /// Create a 403 (Forbidden) response indicating that the current user doesn't have access to the resource
         /// requested or the action it needs to take.
         /// </summary>
         /// <param name="request"></param>
@@ -126,7 +133,7 @@ namespace Umbraco.Web.WebApi
         }
 
         /// <summary>
-        /// Creates a succressful response with notifications in the result to be displayed in the UI
+        /// Creates a successful response with notifications in the result to be displayed in the UI
         /// </summary>
         /// <param name="request"></param>
         /// <param name="successMessage"></param>
@@ -152,6 +159,11 @@ namespace Umbraco.Web.WebApi
             var msg = request.CreateErrorResponse(HttpStatusCode.BadRequest, modelState);
             msg.Headers.Add("X-Status-Reason", "Validation failed");
             return msg;
+        }
+
+        internal static string ClientCulture(this HttpRequestMessage request)
+        {
+            return request.Headers.TryGetValues("X-UMB-CULTURE", out var values) ? values.FirstOrDefault() : null;
         }
     }
 

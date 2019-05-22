@@ -1,20 +1,25 @@
-function imageFilePickerController($scope) {
+function imageFilePickerController($scope, editorService) {
 
-    $scope.pick = function() {
-        $scope.mediaPickerDialog = {};
-        $scope.mediaPickerDialog.view = "mediapicker";
-        $scope.mediaPickerDialog.show = true;
+    $scope.add = function() {
+        var mediaPickerOptions = {
+            view: "mediapicker",
+            multiPicker: false,
+            disableFolderSelect: true,
+            onlyImages: true,
+            submit: function (model) {
+                $scope.model.value = model.selection[0].image;
 
-        $scope.mediaPickerDialog.submit = function(model) {
-            $scope.model.value = model.selectedImages[0].image;
-            $scope.mediaPickerDialog.show = false;
-            $scope.mediaPickerDialog = null;
+                editorService.close();
+            },
+            close: function () {
+                editorService.close();
+            } 
         };
+        editorService.mediaPicker(mediaPickerOptions);
+    };
 
-        $scope.mediaPickerDialog.close = function(oldModel) {
-            $scope.mediaPickerDialog.show = false;
-            $scope.mediaPickerDialog = null;
-        };
+    $scope.remove = function () {
+        $scope.model.value = null;
     };
 
 }
